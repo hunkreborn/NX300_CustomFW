@@ -1,0 +1,167 @@
+=== CT3 CONSOLE PROBE V1.1 START ===
+Sun Aug  9 12:10:01 UTC 2026
+Linux nx300 3.5.0+ #24 PREEMPT Mon Feb 3 14:56:56 KST 2014 armv7l GNU/Linux
+uid=uid=0(root) gid=0(root)
+camera_pid=267
+--- camera process ---
+ 267 ?        00:12:00 di-camera-app-n
+--- cmdline ---
+di-camera-app-nx300 
+--- status ---
+Name:	di-camera-app-n
+State:	S (sleeping)
+Tgid:	267
+Pid:	267
+PPid:	1
+TracerPid:	0
+Uid:	0	0	0	0
+Gid:	0	0	0	0
+FDSize:	256
+Groups:	
+VmPeak:	 1078000 kB
+VmSize:	  664792 kB
+VmLck:	       0 kB
+VmPin:	       0 kB
+VmHWM:	   35628 kB
+VmRSS:	   28724 kB
+VmData:	  590096 kB
+VmStk:	     136 kB
+VmExe:	    2584 kB
+VmLib:	   42944 kB
+VmPTE:	     630 kB
+VmSwap:	       0 kB
+Threads:	71
+SigQ:	10/735
+--- file descriptors ---
+total 0
+lr-x------    1 root     root            64 Aug  9 12:10 0 -> /dev/null
+lrwx------    1 root     root            64 Aug  9 12:10 1 -> /dev/console
+l-wx------    1 root     root            64 Aug  9 12:10 10 -> pipe:[650]
+lrwx------    1 root     root            64 Aug  9 12:10 11 -> socket:[651]
+lrwx------    1 root     root            64 Aug  9 12:10 12 -> /dev/zero
+lr-x------    1 root     root            64 Aug  9 12:10 13 -> /org/opt/dbspace/.app_info.db
+lr-x------    1 root     root            64 Aug  9 12:10 14 -> anon_inode:inotify
+lr-x------    1 root     root            64 Aug  9 12:10 15 -> pipe:[661]
+l-wx------    1 root     root            64 Aug  9 12:10 16 -> pipe:[661]
+lrwx------    1 root     root            64 Aug  9 12:10 17 -> socket:[662]
+lrwx------    1 root     root            64 Aug  9 12:10 18 -> /dev/gpiodev.0
+lrwx------    1 root     root            64 Aug  9 12:10 19 -> /dev/gpiodev.24
+lrwx------    1 root     root            64 Aug  9 12:10 2 -> /dev/console
+lrwx------    1 root     root            64 Aug  9 12:10 20 -> /dev/gpiodev.12
+lrwx------    1 root     root            64 Aug  9 12:10 21 -> /dev/gpiodev.26
+lrwx------    1 root     root            64 Aug  9 12:10 22 -> /dev/d4_sma
+lrwx------    1 root     root            64 Aug  9 12:10 23 -> /dev/gpiodev.7
+lrwx------    1 root     root            64 Aug  9 12:10 24 -> /dev/gpiodev.13
+lrwx------    1 root     root            64 Aug  9 12:10 25 -> /dev/pwmdev.7
+lrwx------    1 root     root            64 Aug  9 12:10 26 -> /dev/gpiodev.14
+lrwx------    1 root     root            64 Aug  9 12:10 27 -> /dev/gpiodev.15
+lrwx------    1 root     root            64 Aug  9 12:10 28 -> /dev/hs_spidev.4
+lrwx------    1 root     root            64 Aug  9 12:10 29 -> /dev/gpiodev.1
+l-wx------    1 root     root            64 Aug  9 12:10 3 -> /dev/log_main
+lrwx------    1 root     root            64 Aug  9 12:10 30 -> /dev/gpiodev.2
+lrwx------    1 root     root            64 Aug  9 12:10 31 -> /dev/gpiodev.3
+lrwx------    1 root     root            64 Aug  9 12:10 32 -> /dev/gpiodev.4
+lrwx------    1 root     root            64 Aug  9 12:10 33 -> /dev/gpiodev.5
+lrwx------    1 root     root            64 Aug  9 12:10 34 -> /dev/gpiodev.6
+lrwx------    1 root     root            64 Aug  9 12:10 35 -> /dev/gpiodev.8
+lrwx------    1 root     root            64 Aug  9 12:10 36 -> /dev/gpiodev.9
+lrwx------    1 root     root            64 Aug  9 12:10 37 -> /dev/gpiodev.10
+lrwx------    1 root     root            64 Aug  9 12:10 38 -> /dev/gpiodev.11
+lrwx------    1 root     root            64 Aug  9 12:10 39 -> /dev/gpiodev.16
+l-wx------    1 root     root            64 Aug  9 12:10 4 -> /dev/log_radio
+lrwx------    1 root     root            64 Aug  9 12:10 40 -> /dev/gpiodev.17
+lrwx------    1 root     root            64 Aug  9 12:10 41 -> /dev/gpiodev.18
+lrwx------    1 root     root            64 Aug  9 12:10 42 -> /dev/gpiodev.19
+lrwx------    1 root     root            64 Aug  9 12:10 43 -> /dev/gpiodev.20
+lrwx------    1 root     root            64 Aug  9 12:10 44 -> /dev/gpiodev.21
+lrwx------    1 root     root            64 Aug  9 12:10 45 -> /dev/gpiodev.22
+lrwx------    1 root     root            64 Aug  9 12:10 46 -> /dev/gpiodev.23
+lrwx------    1 root     root            64 Aug  9 12:10 47 -> /dev/gpiodev.25
+lrwx------    1 root     root            64 Aug  9 12:10 48 -> /dev/gpiodev.27
+lrwx------    1 root     root            64 Aug  9 12:10 49 -> /dev/d4_bma
+l-wx------    1 root     root            64 Aug  9 12:10 5 -> /dev/log_system
+lrwx------    1 root     root            64 Aug  9 12:10 50 -> /dev/lens_comm
+lrwx------    1 root     root            64 Aug  9 12:10 51 -> /dev/allegro
+lrwx------    1 root     root            64 Aug  9 12:10 52 -> /dev/fb0
+lrwx------    1 root     root            64 Aug  9 12:10 53 -> /dev/pwmdev.2
+lrwx------    1 root     root            64 Aug  9 12:10 54 -> /dev/pwmdev.3
+lrwx------    1 root     root            64 Aug  9 12:10 55 -> /dev/fb0
+lrwx------    1 root     root            64 Aug  9 12:10 56 -> /dev/hs_spidev.5
+lrwx------    1 root     root            64 Aug  9 12:10 57 -> /dev/hs_spidev.1
+lr-x------    1 root     root            64 Aug  9 12:10 58 -> /usr/share/edje/di-camera-app-nx300/slp_edc_liveview.edj
+lr-x------    1 root     root            64 Aug  9 12:10 59 -> /usr/share/edje/di-camera-app-nx300/nx_style.edj
+lr-x------    1 root     root            64 Aug  9 12:10 6 -> pipe:[649]
+lrwx------    1 root     root            64 Aug  9 12:10 60 -> /dev/d4_pp_core
+lrwx------    1 root     root            64 Aug  9 12:10 61 -> /dev/d4_pp_ssif
+lrwx------    1 root     root            64 Aug  9 12:10 62 -> /dev/d4_bwm
+lrwx------    1 root     root            64 Aug  9 12:10 63 -> /dev/d4_pp_3a
+lrwx------    1 root     root            64 Aug  9 12:10 64 -> /dev/d4_csm
+lrwx------    1 root     root            64 Aug  9 12:10 65 -> /dev/d4_mipi
+lr-x------    1 root     root            64 Aug  9 12:10 66 -> /usr/share/elementary/themes/default.edj
+lrwx------    1 root     root            64 Aug  9 12:10 68 -> /tmp/stman.lock
+lrwx------    1 root     root            64 Aug  9 12:10 69 -> /dev/accel
+l-wx------    1 root     root            64 Aug  9 12:10 7 -> pipe:[649]
+lrwx------    1 root     root            64 Aug  9 12:10 70 -> socket:[700]
+lrwx------    1 root     root            64 Aug  9 12:10 71 -> /dev/drime4-thermister
+lrwx------    1 root     root            64 Aug  9 12:10 72 -> /dev/d4_ipcm
+lr-x------    1 root     root            64 Aug  9 12:10 8 -> anon_inode:inotify
+lr-x------    1 root     root            64 Aug  9 12:10 9 -> pipe:[650]
+--- fdinfo 0/1/2 ---
+fd=0
+pos:	0
+flags:	0400000
+fd=1
+pos:	0
+flags:	02
+fd=2
+pos:	0
+flags:	02
+--- SysV queues ---
+       key      msqid perms      cbytes       qnum lspid lrpid   uid   gid  cuid  cgid      stime      rtime      ctime
+ 193261252          0   666           0          0   267   305     0     0     0     0 1786277399 1786277399 1310043613
+1338684544      32769   666           0          0     0     0     0     0     0     0          0          0 1310043613
+1394522565      65538   666           0          0     0     0     0     0     0     0          0          0 1310043613
+1491400565      98307   666           0          0     0     0     0     0     0     0          0          0 1310043613
+2124537049     131076   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 556786080     163845   666           0          0     0     0     0     0     0     0          0          0 1310043613
+  70700207     196614   666           0          0     0     0     0     0     0     0          0          0 1310043613
+1479902907     229383   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 230819244     262152   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 187454964     294921   666           0          0     0     0     0     0     0     0          0          0 1310043613
+1595536931     327690   666           0          0     0     0     0     0     0     0          0          0 1310043613
+  76143708     360459   666           0          0     0     0     0     0     0     0          0          0 1310043613
+1687826269     393228   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 520335967     425997   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 277727064     458766   666           0          0     0     0     0     0     0     0          0          0 1310043613
+1034575035     491535   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 565588857     524304   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 379695547     557073   666           0          0     0     0     0     0     0     0          0          0 1310043613
+1112682632     589842   666           0          0     0     0     0     0     0     0          0          0 1310043613
+  79214638     622611   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 693071192     655380   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 995733071     688149   666           0          0     0     0     0     0     0     0          0          0 1310043613
+2126900653     720918   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 183963383     753687   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 139407352     786456   666           0          0     0     0     0     0     0     0          0          0 1310043613
+1068131121     819225   666           0          0   267   267     0     0     0     0 1786277394 1786277394 1310043613
+1467424198     851994   666           8          1   267   304     0     0     0     0 1786277394 1786277388 1310043613
+1154091221     884763   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 678463812     917532   666           0          0   267   307     0     0     0     0 1786277399 1786277399 1310043613
+ 109588236     950301   666           0          0   267   311     0     0     0     0 1786277389 1786277389 1310043613
+     34856     983070   666           0          0     0     0     0     0     0     0          0          0 1310043613
+ 376345960    1015839   666           0          0     0     0     0     0     0     0          0          0 1786277267
+ 871725064    1048608   666           0          0   267   333     0     0     0     0 1786277401 1786277401 1786277267
+1448272780    1081377   666           0          0   267   349     0     0     0     0 1786277401 1786277401 1786277267
+1425326182    1114146   666           0          0   267   267     0     0     0     0 1786277388 1786277388 1786277268
+ 180170958    1146915   666           0          0   267   267     0     0     0     0 1786277388 1786277388 1786277268
+ 286342188    1179684   666           0          0     0     0     0     0     0     0          0          0 1786277268
+ 757745441    1212453   666           0          0     0     0     0     0     0     0          0          0 1786277285
+--- existing logs ---
+--- send commands ---
+info_rc=1
+regr_0340_rc=1
+regr_0342_rc=1
+regr_3404_rc=1
+--- persistent dlog tail ---
+=== CT3 CONSOLE PROBE V1.1 END ===
+Sun Aug  9 12:10:04 UTC 2026

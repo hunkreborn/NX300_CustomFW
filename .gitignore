@@ -1,0 +1,44 @@
+# Samsung NX300 project — local binary/reference material
+
+# Firmware / extracted binaries
+di-camera-app-nx300-full
+live_camera_2026-08-17/di-camera-app-nx300.live
+
+# Large archives / installers
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.exe
+*.iso
+
+# Manuals/reference PDFs stay local
+*.pdf
+
+# Generated reverse-engineering output
+hdmi_re/
+*.asm
+*.disasm
+*.objdump
+*.dump
+
+# Temporary/editor files
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+__pycache__/
+*.pyc
+
+# Large local reference trees
+NX500/
+TIZEN/
+build_installguide_nx300/
+windows_software_reanalysis_2026-08-09/
+
+# Compiled experiment binaries / camera payloads
+experiments/**/arm_write_capture
+experiments/**/arm_write_capture_v[0-9]*
+experiments/**/payload/di-camera-app-nx300
+experiments/**/di-camera-app-nx300-test

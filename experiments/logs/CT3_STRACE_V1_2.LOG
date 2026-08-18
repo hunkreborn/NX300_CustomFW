@@ -1,0 +1,88 @@
+=== CT3 STRACE PROBE V1.2 START ===
+Sun Aug  9 12:13:26 UTC 2026
+uid=uid=0(root) gid=0(root)
+camera_pid=267
+shell_tid=310
+--- task names ---
+267 di-camera-app-n
+272 recorder
+273 CBackEndInit
+274 CBackEndStill0
+275 CBackEndStill1
+276 CBackEndStill2
+277 CBackEndStill3
+278 CBackEndStill4
+279 CBackEndStill5
+280 CBackEndStill6
+281 CBackEndStill7
+282 CBackEndStill8
+283 CBackEndStill9
+284 CBackEndQView10
+285 CBackEndQView11
+286 CBackEndQView12
+287 CBackEndQView13
+288 CIpcProcess
+289 CLdcmProcess
+290 CLdcsProcess
+291 CRawProcess
+292 CSEProcess
+293 CWBProcess
+294 CEffectProcess
+295 CTransferProces
+296 AlarmTimer
+297 videoErrHndl
+298 videoB2YUp
+299 frontEndMsg
+300 frontEndEvent
+301 videoEvent
+303 FrontendNx
+304 d4c_mipi_thread
+305 CaptureControll
+306 AeMain
+307 AeMsg
+308 AeComp
+309 AFMain
+310 shell_di_camera
+311 ui_th_common
+312 AwbMain
+324 lens_poll_th
+325 LensControlServ
+326 StrobeSvc
+327 HotInSys
+328 GPSSvc
+329 FD_task
+332 OBJ_task
+333 Liveview_Histog
+342 Shutter_Assert
+343 Panorama_task
+344 SmartAuto
+349 videoIPCm
+351 stman_Listner
+352 sensorapi
+382 AlarmTimer
+434 SIF FileHandler
+435 SIF Main
+437 Blinking Thread
+442 MG1Thread
+443 MG2Thread
+444 ShutterPI
+445 ShtTimer
+446 ShtTimer
+447 ShtTimer
+448 ShtTimer
+449 ShtTimer
+450 videosrc
+451 videosink
+452 3a_dma_handler
+453 udd_intr_handle
+454 udd_intr_handle
+455 udd_ipcm_intr_h
+460 Script Thread
+info_rc=1
+regr_0340_rc=1
+regr_0342_rc=1
+regr_3404_rc=1
+strace_pid=583
+trace_bytes=1723
+=== CT3 STRACE PROBE V1.2 END ===
+Sun Aug  9 12:13:30 UTC 2026

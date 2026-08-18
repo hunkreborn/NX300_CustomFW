@@ -1,0 +1,140 @@
+=== NX300 NETWORK CONSOLE START ===
+Sun Aug  9 12:47:16 UTC 2026
+uid=uid=0(root) gid=0(root)
+interfaces before start:
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+listeners before start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+telnetd_23_rc=0
+telnetd_22_rc=0
+listeners after start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      367/telnetd
+tcp        0      0 0.0.0.0:23              0.0.0.0:*               LISTEN      364/telnetd
+telnetd pids:
+367 364
+=== NX300 NETWORK CONSOLE READY ===
+Sun Aug  9 12:47:18 UTC 2026
+=== NX300 NETWORK CONSOLE START ===
+Sun Aug  9 12:52:33 UTC 2026
+uid=uid=0(root) gid=0(root)
+interfaces before start:
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+listeners before start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+telnetd_23_rc=0
+telnetd_22_rc=0
+listeners after start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      369/telnetd
+tcp        0      0 0.0.0.0:23              0.0.0.0:*               LISTEN      366/telnetd
+telnetd pids:
+369 366
+=== NX300 NETWORK CONSOLE READY ===
+Sun Aug  9 12:52:34 UTC 2026
+=== NX300 NETWORK CONSOLE START ===
+Sun Aug  9 12:56:27 UTC 2026
+uid=uid=0(root) gid=0(root)
+interfaces before start:
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+listeners before start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+telnetd_23_rc=0
+telnetd_22_rc=0
+listeners after start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      366/telnetd
+tcp        0      0 0.0.0.0:23              0.0.0.0:*               LISTEN      364/telnetd
+telnetd pids:
+366 364
+=== NX300 NETWORK CONSOLE READY ===
+Sun Aug  9 12:56:28 UTC 2026
+=== NX300 NETWORK CONSOLE START ===
+Sun Aug  9 12:56:58 UTC 2026
+uid=uid=0(root) gid=0(root)
+interfaces before start:
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+listeners before start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+telnetd_23_rc=0
+telnetd_22_rc=0
+listeners after start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      368/telnetd
+tcp        0      0 0.0.0.0:23              0.0.0.0:*               LISTEN      365/telnetd
+telnetd pids:
+368 365
+=== NX300 NETWORK CONSOLE READY ===
+Sun Aug  9 12:57:00 UTC 2026
+=== NX300 NETWORK CONSOLE START ===
+Sun Aug  9 12:58:36 UTC 2026
+uid=uid=0(root) gid=0(root)
+interfaces before start:
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+listeners before start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+telnetd_23_rc=0
+telnetd_22_rc=0
+listeners after start:
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:6000            0.0.0.0:*               LISTEN      232/Xorg
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      367/telnetd
+tcp        0      0 0.0.0.0:23              0.0.0.0:*               LISTEN      364/telnetd
+telnetd pids:
+367 364
+=== NX300 NETWORK CONSOLE READY ===
+Sun Aug  9 12:58:37 UTC 2026

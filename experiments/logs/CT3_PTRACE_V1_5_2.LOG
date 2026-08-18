@@ -1,0 +1,18 @@
+=== CT3 PTRACE V1.5.2 START ===
+Sun Aug  9 13:54:56 UTC 2026
+camera_pid=267 shell_tid=310
+capture_tool_missing
+=== CT3 PTRACE V1.5.2 START ===
+Tue Jan  1 00:14:22 UTC 2013
+camera_pid=267 shell_tid=310
+live_rc=1
+=== CT3 PTRACE V1.5.2 START ===
+Tue Jan  1 00:01:30 UTC 2013
+camera_pid=267 shell_tid=310
+live_rc=1
+stop_rc=1
+capture_rc=0
+capture_bytes=10339
+tracer_after=TracerPid:	0
+=== CT3 PTRACE V1.5.2 END ===
+Tue Jan  1 00:01:36 UTC 2013

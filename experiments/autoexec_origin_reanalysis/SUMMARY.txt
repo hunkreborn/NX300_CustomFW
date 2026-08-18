@@ -1,0 +1,32 @@
+1. ROOT CAUSE:
+   O proprio di-camera-app dispara autoexec.sh apos o evento de cartao montado.
+
+2. CALLER:
+   UI_Event_Card_Mounted(), call 0x001c27b0, fonte ui_event_card_manager.cpp:942.
+
+3. LIBMISC:
+   start_script cria thread detached; ela chmoda e executa autoexec.sh via
+   system(), repetindo apos cerca de 1 segundo sempre que o script retorna.
+
+4. BOOT ORDER:
+   init -> X/xinitrc -> launchpad -> primeiro exec do app -> card mounted -> autoexec.
+
+5. BEST EARLY HOOK:
+   Nenhum hook SD anterior ao primeiro exec foi provado. Melhor aproximacao e
+   bind staged com o app vivo, seguido de segundo exec gracioso via AUL.
+
+6. BEST RUNTIME HOOK:
+   Patch inline/GOT por ptrace, guardado por hash/build, watchdog e rollback.
+
+7. NEXT EXPERIMENT:
+   di_camera_second_exec_stage_v1: payload identico a build confirmada; bind
+   enquanto o original roda; apenas comparar os inodes; sem relaunch/kill.
+
+8. CAMERA MUTATIONS:
+   NONE
+
+9. ORIGINAL FILES MODIFIED:
+   NONE
+
+10. REPORT LOCATION:
+    /home/hunkreborn/Downloads/nx300/experiments/autoexec_origin_reanalysis/

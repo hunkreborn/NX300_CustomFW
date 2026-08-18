@@ -1,0 +1,28 @@
+# Executados somente no host, no workspace local. Nenhum comando abaixo acessa a camera.
+rg --files TIZEN/project/NX300
+find TIZEN/project/NX300/image/rootdir_3-5 ...
+file <ELFs e scripts selecionados>
+sha256sum <ELFs, DB e scripts selecionados>
+arm-linux-gnueabi-readelf -h -n -d -r -s -Ws <ELF>
+arm-linux-gnueabi-nm -n -C <ELF>
+arm-linux-gnueabi-objdump -d -C <ELF>
+arm-linux-gnueabi-objdump -d -C --start-address=<addr> --stop-address=<addr> <ELF>
+arm-linux-gnueabi-addr2line -a -f -C -e di-camera-app-nx300-full <addresses>
+arm-linux-gnueabi-readelf --debug-dump=decodedline di-camera-app-nx300-full
+strings -a -t x <ELFs selecionados>
+rg -a -n -i 'autoexec|start_script|stop_script|/mnt/mmc|/sdcard|launchpad|di-camera-app' <corpus selecionado>
+sed -n <ranges> <scripts/configs>
+python3 (sqlite3 em URI mode=ro para ler .app_info.db)
+cmp e sha256sum para correlacionar variantes
+
+# Saidas temporarias grandes
+/tmp/nx300_autoexec_reanalysis/libmisc_start_stop.asm
+/tmp/nx300_autoexec_reanalysis/libmisc_thread_helpers.asm
+/tmp/nx300_autoexec_reanalysis/libmisc_script_thread.asm
+/tmp/nx300_autoexec_reanalysis/di_camera_full.disasm
+/tmp/nx300_autoexec_reanalysis/di_camera_build32.disasm
+/tmp/nx300_autoexec_reanalysis/caller_ui_event_card_mounted.asm
+/tmp/nx300_autoexec_reanalysis/caller_stop_script.asm
+/tmp/nx300_autoexec_reanalysis/card_manager_and_mounted_entry.asm
+/tmp/nx300_autoexec_reanalysis/card_message_dispatch.asm
+/tmp/nx300_autoexec_reanalysis/card_idle_callback.asm

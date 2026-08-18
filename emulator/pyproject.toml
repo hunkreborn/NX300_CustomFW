@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nx300-emulator"
+version = "0.1.0"
+description = "Read-only behavioral emulator for Samsung NX300 reverse engineering"
+requires-python = ">=3.10"
+
+[project.scripts]
+nx300-emulator = "nx300_emulator.cli:main"
+
+[tool.setuptools]
+packages = ["nx300_emulator"]

@@ -1,0 +1,9 @@
+=== CT3 LIVE READ HEXDUMP V1.4.3 START ===
+Sun Aug  9 13:30:58 UTC 2026
+camera_pid=267 shell_tid=310
+live_rc=1
+stop_rc=1
+trace_bytes=12769
+address_markers=3
+=== CT3 LIVE READ HEXDUMP V1.4.3 END ===
+Sun Aug  9 13:31:04 UTC 2026

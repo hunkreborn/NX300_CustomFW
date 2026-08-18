@@ -1,0 +1,137 @@
+#!/bin/sh
+
+mkdir -p /dev/pts
+mount -t devpts none /dev/pts
+httpd -h /mnt/mmc
+inetd /mnt/mmc/inetd.conf
+
+# NX300 one-boot, NAND-free executable override proof v2.
+# SD files remain flat in /mnt/mmc; experiment runtime remains in /tmp.
+
+LOG=/tmp/di_camera_sd_override_v2.log
+SD_PAYLOAD=/mnt/mmc/di-camera-app-nx300-test
+TMP_PAYLOAD=/tmp/di-camera-app-nx300
+TARGET=/usr/bin/di-camera-app-nx300
+EXPECTED_SHA256=c3932e60f75df886ed5484470be91f2d9ca8f3d6e2c9944cdd0060561fe852a7
+
+DROPBEAR=/mnt/mmc/dropbear-nx300-v3
+SD_AUTHORIZED_KEYS=/mnt/mmc/authorized_keys
+SD_HOSTKEY_B64=/mnt/mmc/nx300_hostkey.b64
+SSH_DIR=/tmp/nxssh
+SSH_AUTHORIZED_KEYS=/tmp/nxssh/authorized_keys
+SSH_HOSTKEY=/tmp/nx300_hostkey
+SSH_PIDFILE=/tmp/dropbear.pid
+
+BOUND=0
+
+: > "$LOG" 2>/dev/null || exit 1
+
+log()
+{
+    printf '%s\n' "$*" >> "$LOG"
+}
+
+fail()
+{
+    log "RESULT=FAIL"
+    log "ERROR=$*"
+    if [ "$BOUND" = 1 ]; then
+        if umount "$TARGET" >> "$LOG" 2>&1; then
+            BOUND=0
+            log "FAILSAFE_UNMOUNT=OK"
+        else
+            log "FAILSAFE_UNMOUNT=FAILED_REBOOT_PHYSICALLY"
+        fi
+    fi
+    exit 1
+}
+
+camera_pid()
+{
+    pidof di-camera-app-nx300 2>/dev/null || pidof di-camera-app 2>/dev/null
+}
+
+hash_of()
+{
+    sha256sum "$1" 2>/dev/null | awk '{print $1}'
+}
+
+log "EXPERIMENT=di_camera_sd_override_v2"
+log "UPTIME_BEGIN=$(cat /proc/uptime 2>/dev/null)"
+log "TARGET=$TARGET"
+log "SD_PAYLOAD=$SD_PAYLOAD"
+
+# Recreate all SSH runtime state from persistent, read-only SD artifacts.
+[ -x "$DROPBEAR" ] || fail "Dropbear payload missing or not executable"
+[ -f "$SD_AUTHORIZED_KEYS" ] || fail "authorized_keys missing"
+[ -f "$SD_HOSTKEY_B64" ] || fail "base64 host key missing"
+command -v base64 >/dev/null 2>&1 || fail "base64 unavailable"
+
+mkdir -p "$SSH_DIR" >> "$LOG" 2>&1 || fail "could not create SSH runtime directory"
+chmod 700 "$SSH_DIR" >> "$LOG" 2>&1 || fail "could not protect SSH runtime directory"
+rm -f "$SSH_AUTHORIZED_KEYS" "$SSH_HOSTKEY" "$SSH_PIDFILE" 2>/dev/null || fail "could not clear stale SSH runtime files"
+cp "$SD_AUTHORIZED_KEYS" "$SSH_AUTHORIZED_KEYS" >> "$LOG" 2>&1 || fail "could not stage authorized_keys"
+chmod 600 "$SSH_AUTHORIZED_KEYS" >> "$LOG" 2>&1 || fail "could not protect authorized_keys"
+base64 -d "$SD_HOSTKEY_B64" > "$SSH_HOSTKEY" 2>> "$LOG" || fail "could not decode host key"
+[ -s "$SSH_HOSTKEY" ] || fail "decoded host key is empty"
+chmod 600 "$SSH_HOSTKEY" >> "$LOG" 2>&1 || fail "could not protect host key"
+
+# Exact Dropbear invocation previously validated on this NX300 build.
+"$DROPBEAR" -F -r /tmp/nx300_hostkey -D /tmp/nxssh -p 22 -P /tmp/dropbear.pid -j -k -m >> "$LOG" 2>&1 &
+DROPBEAR_LAUNCH_PID=$!
+[ -n "$DROPBEAR_LAUNCH_PID" ] || fail "could not launch Dropbear"
+log "DROPBEAR_LAUNCH_PID=$DROPBEAR_LAUNCH_PID"
+log "DROPBEAR_START=REQUESTED"
+
+[ -x /usr/bin/sha256sum ] || command -v sha256sum >/dev/null 2>&1 || fail "sha256sum unavailable"
+[ -x /bin/mount ] || command -v mount >/dev/null 2>&1 || fail "mount unavailable"
+[ -f "$TARGET" ] || fail "target missing"
+[ -f "$SD_PAYLOAD" ] || fail "SD payload missing"
+
+PID_BEFORE=$(camera_pid)
+[ -z "$PID_BEFORE" ] || fail "camera app already running before verification: $PID_BEFORE"
+
+TARGET_SHA=$(hash_of "$TARGET")
+[ -n "$TARGET_SHA" ] || fail "could not hash original target"
+log "TARGET_SHA256_BEFORE=$TARGET_SHA"
+[ "$TARGET_SHA" = "$EXPECTED_SHA256" ] || fail "original target hash mismatch"
+
+SD_SHA=$(hash_of "$SD_PAYLOAD")
+[ -n "$SD_SHA" ] || fail "could not hash SD payload"
+log "SD_PAYLOAD_SHA256=$SD_SHA"
+[ "$SD_SHA" = "$EXPECTED_SHA256" ] || fail "SD payload hash mismatch"
+
+rm -f "$TMP_PAYLOAD" 2>/dev/null || fail "could not clear stale /tmp payload"
+cp "$SD_PAYLOAD" "$TMP_PAYLOAD" >> "$LOG" 2>&1 || fail "copy to /tmp failed"
+chmod 755 "$TMP_PAYLOAD" >> "$LOG" 2>&1 || fail "chmod 755 failed"
+
+TMP_SHA=$(hash_of "$TMP_PAYLOAD")
+[ -n "$TMP_SHA" ] || fail "could not hash /tmp payload"
+log "TMP_PAYLOAD_SHA256=$TMP_SHA"
+[ "$TMP_SHA" = "$EXPECTED_SHA256" ] || fail "/tmp payload hash mismatch"
+
+TARGET_ID_BEFORE=$(stat -c '%d:%i' "$TARGET" 2>/dev/null)
+TMP_ID=$(stat -c '%d:%i' "$TMP_PAYLOAD" 2>/dev/null)
+[ -n "$TARGET_ID_BEFORE" ] || fail "could not stat target"
+[ -n "$TMP_ID" ] || fail "could not stat /tmp payload"
+log "TARGET_DEV_INODE_BEFORE=$TARGET_ID_BEFORE"
+log "TMP_DEV_INODE=$TMP_ID"
+
+# Final pre-bind guard. If autoexec lost the race with launchpad, do nothing.
+PID_PRE_BIND=$(camera_pid)
+[ -z "$PID_PRE_BIND" ] || fail "camera app started before bind: $PID_PRE_BIND"
+
+mount --bind "$TMP_PAYLOAD" "$TARGET" >> "$LOG" 2>&1 || fail "bind mount failed"
+BOUND=1
+
+TARGET_SHA_AFTER=$(hash_of "$TARGET")
+TARGET_ID_AFTER=$(stat -c '%d:%i' "$TARGET" 2>/dev/null)
+log "TARGET_SHA256_AFTER=$TARGET_SHA_AFTER"
+log "TARGET_DEV_INODE_AFTER=$TARGET_ID_AFTER"
+[ "$TARGET_SHA_AFTER" = "$EXPECTED_SHA256" ] || fail "bound target hash mismatch"
+[ "$TARGET_ID_AFTER" = "$TMP_ID" ] || fail "bound target is not the /tmp inode"
+
+log "UPTIME_BOUND=$(cat /proc/uptime 2>/dev/null)"
+log "RESULT=SUCCESS"
+log "ROLLBACK=physical reboot"
+exit 0
