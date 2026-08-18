@@ -321,3 +321,144 @@ This makes the final `631=0` condition directly reproducible from Build311 and r
 ### Safest remaining static step
 
 Trace the producer of the XRandR mode names/flags (`3d`, `1920x1080f`, and the mode flag tested with bit `0x10`) through the NX300 X server and HDMI DRM/BSP sources. The goal is to identify the exact EDID/VSDB condition that creates the candidate consumed at `0x157c4c`, without altering a sink or camera. In parallel, recover symbolic names for camera ioctl IDs 43 and 66 from the matching capture-framework headers/debug types; neither unknown is a reason to invoke the live process.
+
+## 13. PR #1 checkpoint — VSDB producer, mode-ID ledger and ioctl recovery
+
+This section supersedes the two remaining tasks in section 12. All executable
+addresses below are from Build311. Kernel-source paths describe the NX300 BSP
+and are not Build417 address substitutions.
+
+### Exact mode-ID globals and candidate classes
+
+The four globals adjacent to the liveview CRTC selector are populated by
+`__xrr_output_select` as follows:
+
+| Global | Build311 writer | Candidate | Evidence / later consumer |
+|---|---:|---|---|
+| `0x31856c` | `0x1581e4` | 1920x1080, 30 Hz, progressive; mandatory HDMI 3D frame-packing timing | read by `UI_Set_X_Crtc_Config_Liveview` at `0x151f78`; read by normal CRTC setup at `0x152450` |
+| `0x318570` | `0x15800c` | 1920x1080, 60 Hz, interlaced; mandatory SBS-half timing | selected in the `631==1` branch at `0x1523e0/0x15242c` |
+| `0x318578` | `0x158114` | 1920x1080, 50 Hz, interlaced; mandatory SBS-half PAL timing | selected in the `631==1` branch at `0x15243c` |
+| `0x318574` | `0x158238` | second 30 Hz progressive/name variant (`tv_possible_size_3d_pal`) | recorded for completeness; no direct use by the visible CRTC helpers was found |
+
+`0x31856c` is zeroed at `0x157750`. If neither 30 Hz candidate exists, it is
+overwritten at `0x158c00` with the ordinary selected output mode. Consequently,
+the global is a frame-packing mode ID only when the 30 Hz candidate was actually
+found; its storage address alone does not prove that semantic.
+
+The mode-name constants used by Build311 include `1920x1080` (`0x253620`) and
+`1920x1080f` (`0x25362c`), followed by the analogous 720p/576/480 names. The
+candidate classifier checks refresh and XRandR flags as well as those names.
+
+### Proven EDID/VSDB to DRM relationship
+
+The BSP implementation in
+`packages/linux-3.5/drivers/gpu/drm/drm_edid.c` parses the HDMI Vendor Specific
+Data Block in `cea_hdmi_3d_present()`. When HDMI video and 3D-present bits are
+valid, it recognizes frame-packing, top-and-bottom and side-by-side-half
+structures. `cea_hdmi_patch_mandatory_3d_modes()` then annotates mandatory
+timings:
+
+- 1920x1080 progressive at 30 Hz with `DRM_MODE_FLAG_3D_FRAME_PACKING`;
+- 1920x1080 interlaced at 50 Hz with `DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF`;
+- 1920x1080 interlaced at 60 Hz with `DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF`.
+
+The flag definitions are in `include/drm/drm_mode.h`. Critically, the bit
+`0x10` tested by the application is `DRM_MODE_FLAG_INTERLACE`, not a 3D flag.
+The 3D meaning of the app's 50/60 Hz candidates comes from the kernel's
+VSDB-driven mandatory-mode annotation plus the timing class; the app does not
+parse raw EDID itself.
+
+The evidence chain is therefore:
+
+`HDMI VSDB -> drm_edid.c 3D parser -> mandatory DRM mode annotation -> X server/XRandR mode record -> __xrr_output_select candidate/global -> item 631`.
+
+The raw EDID-to-kernel portion and the application consumer are **PROVEN** from
+source/disassembly. The precise X server conversion of the DRM record into each
+NX300-specific `...f` name remains **STRONG EVIDENCE**, not a fully reconstructed
+line-by-line call path.
+
+### `UI_Set_HDMI_3D_Type(3)` is deliberate frame-packing selection
+
+Build311 `UI_Set_HDMI_3D_Type(int)` is at `0x1ede68`. Its formal parameter is a
+plain `int` (also confirmed by Build417 DWARF), but the complete switch removes
+the ambiguity:
+
+```c
+void UI_Set_HDMI_3D_Type(int public_type)
+{
+    switch (public_type) {
+    case 0: C3DState::Set3DState(1); break; // OFF layer
+    case 1: C3DState::Set3DState(2); break; // SBS layer
+    case 2: C3DState::Set3DState(3); break; // top/bottom layer
+    case 3: C3DState::Set3DState(4); break; // frame-packing layer
+    default: C3DState::Set3DState(1); break;
+    }
+}
+```
+
+At `0x1509a8` the official enter path loads literal `3`; `0x1509ac` calls this
+wrapper. Thus this is not an accidental equality between two enum layers: the
+wrapper explicitly maps public value 3 to internal state 4.
+
+### Meaning of the `631==SBS` path and the safety mismatch
+
+The official key handler treats 631 only as a nonzero capability gate.
+`UI_Hdmi_3D_Liveview(0)` does not consume its exact value. It always:
+
+1. asks `UI_Set_X_Crtc_Config_Liveview(0)` to use `0x31856c`;
+2. calls `UI_Set_HDMI_3D_Type(3)`, selecting frame packing.
+
+By contrast, normal HDMI playback setup uses 631==1 to select `0x318570` or
+`0x318578`, the 60/50i SBS modes. Therefore item 631 is a playback preference /
+capability state, while the special sensor-liveview transport is fixed to
+1080p30 frame packing.
+
+This exposes a real edge path: an SBS candidate can make 631 nonzero even when
+no 30p candidate was found. In that case `0x31856c` contains the ordinary
+fallback mode written at `0x158c00`, yet enter still requests internal
+frame-packing state. A fully compliant HDMI 1.4 3D EDID may normally advertise
+the mandatory 1080p30 timing, but the application does not enforce that
+precondition locally. It is therefore unsafe to use `631!=0` alone as proof
+that the transition is coherent.
+
+### Preference 946 validation audit
+
+Build417 semantic correlation proves values 0=SBS, 1=FRAME_PACKING and 2=MAX.
+`UI_Set_Attr_3D_Hdmi_Output()` is a no-op in that build, so it supplies no
+range check. The persisted preference field is `e_3d_hdmi_output` at offset
+`0x47c` in `pref_app.h`; `libprefman.so:pref_app_default` contains zero at that
+field, strongly supporting SBS as the factory default. Normal menu tables expose
+only 0/1.
+
+No clamp was found for a corrupted/stale value 2. With candidates present, the
+writer's value-2 path can leave 631 unchanged rather than resetting it. This is
+not reachable through the normal menu/default path, but it remains a genuine
+defensive-programming gap. Confidence: **PROVEN control flow**, **STRONG
+EVIDENCE normal default**, **HYPOTHESIS for real-world corrupt preference**.
+
+### Camera ioctl IDs 43 and 66
+
+Build417 DWARF contains the `MMCameraUserDataParam` enumerators:
+
+- 43 = `MM_CAMERA_USERDATA_IZOOM`;
+- 66 = `MM_CAMERA_USERDATA_3DMOVIEFRAMERATE`.
+
+Build311 uses 43 at `0x150894` through `UI_Get_Camera_Ioctl` and tests a byte at
+offset 14 of the returned buffer. The exact field name at that offset remains
+unknown. It uses 66 at `0x150978` through `UI_Set_Camera_Ioctl` with null/zero
+payload. These symbolic IDs correct the earlier “unknown ioctl” wording; the
+implementation behind command 66 still requires capture-framework analysis if
+its exact cadence effect is needed.
+
+### Revised safety conclusion
+
+The static state machine is now sufficiently clear to reject any experiment
+whose only precondition is `631!=0`. Before a native physical-key test, the sink
+must be shown to expose the 1920x1080@30 frame-packing candidate actually stored
+in `0x31856c`, not merely a 50/60i SBS candidate. A read-only XRandR/DRM mode
+inventory is the safest next evidence step. No direct function invocation,
+state write or CES demo path is justified.
+
+### Camera mutations performed for this checkpoint
+
+**NONE.** The investigation was entirely offline/local.

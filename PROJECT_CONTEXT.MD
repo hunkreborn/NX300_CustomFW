@@ -495,3 +495,14 @@ de serviço/produção.
 - A fronteira de evidência foi refinada: consumo de modos XRandR e semântica 3D são provados; origem EDID é inferência forte; ligação exata com VSDB/driver ainda requer rastrear o produtor dos mode names/flags; não há evidência no call path de que CEC escreva 631 ou determine 946.
 - Próximo passo permanece somente estático: rastrear `3d`/`1920x1080f`/flag XRandR `0x10` no X server e BSP HDMI e recuperar os nomes dos ioctls 43/66.
 - CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Checkpoint PR #1: origem VSDB, modos e restrição de segurança
+
+- O BSP `drm_edid.c` confirma a cadeia HDMI VSDB 3D -> anotação dos modos DRM obrigatórios: 1080p30 frame packing e 1080i50/60 SBS-half. O bit `0x10` testado pelo app é `INTERLACE`, não uma flag 3D.
+- Globais Build311: `0x31856c` recebe o mode ID 1080p30 em `0x1581e4`; `0x318570` recebe 1080i60 SBS em `0x15800c`; `0x318578` recebe 1080i50 SBS em `0x158114`; `0x318574` recebe a segunda variante 30p em `0x158238`.
+- `UI_Set_HDMI_3D_Type(int)` (`0x1ede68`) mapeia explicitamente entrada pública 3 para estado interno 4. A entrada oficial carrega 3 em `0x1509a8`, portanto escolhe deliberadamente frame packing.
+- O caminho liveview ignora a variante exata de 631: sempre usa `0x31856c` e frame packing. Um candidato somente SBS pode tornar 631 não zero enquanto `0x31856c` contém fallback comum; logo `631!=0` isoladamente não é precondição segura.
+- Ioctls recuperados por DWARF: 43=`MM_CAMERA_USERDATA_IZOOM`; 66=`MM_CAMERA_USERDATA_3DMOVIEFRAMERATE`.
+- Preferência 946 tem default forte 0/SBS e UI normal 0/1, mas nenhum clamp foi achado para valor inválido 2; nesse caso 631 pode permanecer stale.
+- Próximo teste seguro continua somente leitura: confirmar no XRandR/DRM que o sink realmente oferece a candidata 1080p30 frame-packing antes de qualquer evento nativo.
+- CAMERA MUTATIONS: NONE.

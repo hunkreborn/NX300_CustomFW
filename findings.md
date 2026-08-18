@@ -1688,3 +1688,31 @@ elimina a dependência de enumerar syscalls presentes durante a anexação.
 - `select_fakemode` corresponde a `[fp-24]`, não a `[fp-28]`; portanto o gate final de 631 é composto exclusivamente pelos quatro candidatos 3D.
 - Classificação revisada: XRandR + candidatos 3D PROVEN; origem em EDID STRONG INFERENCE; mapeamento exato de HDMI VSDB para mode name/flag UNKNOWN; participação de CEC no writer path NOT OBSERVED.
 - Nenhuma câmera acessada e nenhuma mutação realizada.
+
+## 2026-08-18 — HDMI VSDB -> XRandR e audit do transporte frame-packing
+
+### Producer no kernel/BSP
+
+- `TIZEN/project/NX300/packages/linux-3.5/drivers/gpu/drm/drm_edid.c`: `cea_hdmi_3d_present()` interpreta o HDMI VSDB e reconhece frame packing, top/bottom e SBS-half; `cea_hdmi_patch_mandatory_3d_modes()` anota 1080p30 como frame packing e 1080i50/60 como SBS-half.
+- `include/drm/drm_mode.h`: `0x10` é `DRM_MODE_FLAG_INTERLACE`; as flags 3D ocupam bits 14–16. Corrige a hipótese de que o teste `flags & 0x10` do app fosse diretamente uma flag 3D.
+- Cadeia de evidência: VSDB -> parser DRM -> modos obrigatórios anotados -> XRandR -> `__xrr_output_select` -> globals/item631. A conversão exata do X server para nomes `1920x1080[f]` ainda é inferência forte.
+
+### Ledger dos globals Build311
+
+- `0x31856c`: zerado `0x157750`; recebe candidata 1080p30 progressiva em `0x1581e4`; se não houver candidata 30p, recebe modo normal fallback em `0x158c00`; lido pelo CRTC liveview em `0x151f78`.
+- `0x318570`: recebe 1080i60 SBS em `0x15800c`; usado pelo ramo 631==1 em `0x1523e0/0x15242c`.
+- `0x318578`: recebe 1080i50 SBS em `0x158114`; usado no ramo 631==1 em `0x15243c`.
+- `0x318574`: recebe segunda variante 30p em `0x158238`; consumidor direto não localizado.
+
+### Tipo 3D e mismatch SBS/frame packing
+
+- `UI_Set_HDMI_3D_Type(int)` Build311 `0x1ede68` implementa switch: 0->estado1, 1->estado2, 2->estado3, 3->estado4, default->estado1. A chamada oficial `0x1509a8/0x1509ac` usa literal 3, provando seleção deliberada de frame packing.
+- `UI_Hdmi_3D_Liveview(0)` não usa o valor exato de 631: escolhe sempre `0x31856c` e tipo público 3. O ramo SBS de 631 só é respeitado no CRTC normal/playback.
+- Caso-limite PROVEN no controle de fluxo: somente candidatos SBS podem produzir 631!=0 sem candidata 30p; nesse caso `0x31856c` pode ser modo normal fallback enquanto o estado interno é frame packing. Se EDID HDMI 1.4 conforme sempre evita isso é ainda UNKNOWN.
+
+### Preferência e ioctls
+
+- Item946: enum 0=SBS, 1=FRAME_PACKING, 2=MAX. Campo persistido `e_3d_hdmi_output` offset `0x47c`; default em `libprefman.so` é zero. Menu normal aparenta expor apenas 0/1. Nenhum clamp para 2 foi localizado; com candidatas, 631 pode ficar stale.
+- DWARF `MMCameraUserDataParam`: 43=`MM_CAMERA_USERDATA_IZOOM`; 66=`MM_CAMERA_USERDATA_3DMOVIEFRAMERATE`. Build311 consulta 43 em `0x150894` e seta 66 em `0x150978`.
+- Implicação de segurança: não autorizar teste baseado apenas em 631!=0. Primeiro provar, por inventário read-only, a presença da candidata 1080p30 frame-packing efetivamente usada.
+- CAMERA MUTATIONS: NONE.
