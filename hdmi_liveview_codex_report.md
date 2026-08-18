@@ -462,3 +462,153 @@ state write or CES demo path is justified.
 ### Camera mutations performed for this checkpoint
 
 **NONE.** The investigation was entirely offline/local.
+
+## 14. PR #1 checkpoint — 24/30 Hz erratum and end-to-end RandR flag audit
+
+This section corrects and narrows section 13 after independent review noted
+that HDMI 1.4a specifies 1080p24—not 1080p30—as a mandatory frame-packing
+timing.
+
+### Exact local BSP source and upstream comparison
+
+Local NX300 source:
+
+- path: `TIZEN/project/NX300/packages/linux-3.5/drivers/gpu/drm/drm_edid.c`;
+- SHA-256: `f6a9bafd49fa52a3da5c90e711e74a8351f1d3040274dabf1a8f92c299af9940`;
+- parser: lines 1528–1567;
+- Samsung table: lines 1569–1580;
+- matcher/patcher: lines 1582–1604;
+- invocation from CEA parsing: lines 1641–1676.
+
+The local table says exactly:
+
+```c
+{ 1920, 1080, 30, progressive, DRM_MODE_FLAG_3D_FRAME_PACKING },
+{ 1920, 1080, 50, interlaced,  DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF },
+{ 1920, 1080, 60, interlaced,  DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF },
+```
+
+For comparison, official Linux v3.5 does not yet contain this stereo-mandatory
+table. The official Linux v3.13 source used for the direct comparison has
+SHA-256 `55b43f2b034c0ae848d03457bfbacad89efd187270804c95af3164850a7aa5b5`;
+lines 2595–2606 contain 1080p24 frame-packing and top/bottom, 1080i50/60
+SBS-half, and 720p50/60 frame-packing/top-bottom.
+
+Therefore **PROVEN:** the NX300 BSP is a Samsung-specific/early implementation
+which deliberately uses 1080p30 where the later official HDMI-1.4a table uses
+1080p24. It also omits the official 720p50/60 entries and 1080p24 top/bottom.
+The previous suggestion that HDMI compliance itself likely guarantees the
+NX300's 30p candidate is withdrawn.
+
+### The BSP patcher is annotation-only and over-broad
+
+`add_cea_modes()` first adds timings already named by the EDID CEA Video Data
+Block. `cea_hdmi_patch_mandatory_3d_modes()` then iterates only
+`connector->probed_modes`; it does not synthesize a missing 1080p30 timing.
+
+Moreover, `cea_hdmi_3d_present()` returns a bitmask, but its caller uses that
+mask only as a boolean. If any recognized 3D structure exists, the patcher
+unconditionally annotates every matching Samsung-table timing already present.
+It does not restrict the annotation to the exact format bits returned by the
+VSDB parser. This means the local 30p annotation is neither a mode creator nor a
+precise statement that the sink explicitly advertised frame packing for that
+timing.
+
+### Exact Build311 origin of `0x31856c`
+
+The Build311 classifier derives a rounded refresh from `XRRModeInfo`:
+
+```c
+refresh = (unsigned)(dotClock / (hTotal * vTotal) + 0.5);
+if (modeFlags & 0x10)       // RR_Interlace / V_INTERLACE
+    refresh *= 2;
+
+if ((!strcmp(name, "1920x1080") || !strcmp(name, "1920x1080f")) &&
+    refresh == 30) {
+    tv_possible_size_3d = 1;
+    mode_31856c = id;
+    tv_possible_size_3d_pal = 1;
+    mode_318574 = id;
+}
+```
+
+Evidence addresses:
+
+- `0x157e24`: load `dotClock` (XRR offset `+12`);
+- `0x157e58`: load `hTotal` (`+24`);
+- `0x157e8c`: load `vTotal` (`+40`);
+- `0x157e98..0x157eac`: divide, add 0.5, convert to integer;
+- `0x157edc..0x157ef4`: test only flag `0x10` and double interlaced refresh;
+- `0x157f20..0x157f84`: accept either 1080 name;
+- `0x158198..0x1581e4`: compare refresh to 30 and store the mode ID in
+  `0x31856c`;
+- `0x1581f8..0x158238`: the same first 30-Hz mode also populates
+  `0x318574`.
+
+The last point corrects section 13's description of `0x318574` as a second
+name/variant. In Build311 both 30-Hz candidate flags/globals are populated from
+the same mode iteration unless already set; the two accepted names are ORed
+before the refresh branch.
+
+No progressive-bit test is made in the 30 branch. In practice an ordinary
+1080p30 timing qualifies; an unusual interlaced timing whose calculated field
+rate doubles to 30 would also pass.
+
+### DRM 3D bits survive the ABI but are ignored by the application
+
+The old RandR ABI is not the reason the application lacks a 3D-bit test:
+
+- `XRRModeInfo.modeFlags` is `unsigned long`; the wire structure uses a 32-bit
+  `RRModeFlags`, so bits 14–16 fit.
+- D4DRM driver `d4drm_drv.so` (SHA-256
+  `8a23226f53dc2f281c3f0d7db80cb9ff14accbce28655a8359fb5e73be33b4fa`)
+  converts `drmModeModeInfo` at `0x13554/0x13678` and copies the complete input
+  flags word (`input +0x1c`) to `DisplayModeRec.Flags` (`output +0x40`) at
+  `0x13610..0x1361c` / `0x136dc..0x136e8`.
+- Xorg (SHA-256
+  `a252542319c322593cf70d93fab2f80c823d9efa87b44292cfb52f4b03c187d8`)
+  copies `DisplayModeRec.Flags` at `0x89d00` into the `RRModeInfo` passed to
+  `RRModeGet` at `0x89d64`, without masking the high bits.
+- Within Build311 `__xrr_output_select`, every semantic test of XRandR
+  `modeFlags` is `& 0x10` (`0x157ee0`, `0x157fc0`, `0x1580c8`). The other two
+  reads near `0x158d28/0x158db0` only print flags. No test of `0x4000`, `0x8000`
+  or `0x10000` occurs in this routine.
+
+Thus the high DRM 3D bits are available end-to-end but **the application
+deliberately classifies by name/refresh/interlace only**. The suffix `f` is also
+not proof of frame packing: the BSP's `drm_add_modes_dvi_required()` creates
+ordinary forced/fake modes named `1920x1080f` at 50/60 Hz (lines 2131–2164).
+
+### `MM_CAMERA_USERDATA_3DMOVIEFRAMERATE` does not prove 24->30 conversion
+
+The capture library
+`imagedev/usr/lib/libcapture-fw-slpcam-nx300.so` has SHA-256
+`48f4f6362598211679c252ad01154d57264b6e01269f1a0861a7852e2fe107ac`.
+Static symbols/strings prove only two public 3D movie cadence choices:
+`F3DMOVIEFRAMERATE_FPS15` and `F3DMOVIEFRAMERATE_FPS30`.
+`convertUserData_3DMOVIEFRAMERATE()` at `0x1eca8c` maps those encoded values;
+`CCapCmdIf::Set3DFramerate()` at `0x1e4f2c` maps four internal encoded values
+to IQ-repeater parameters 11/10/9/8 and writes parameter ID 77.
+
+Build311 invokes command 66 with null data/length at `0x150978..0x150984`, so
+the precise selected value/default must be resolved in the ioctl dispatch.
+No static evidence found here performs, or even references, a 24->30 HDMI
+cadence conversion. The 15/30 camera choices are consistent with a native
+30-based Samsung 3D capture path, but causality is **UNKNOWN**.
+
+### Revised safety conclusion
+
+An HDMI-1.4-compliant sink may legitimately provide mandatory 1080p24 frame
+packing while lacking the Samsung-specific 1080p30 timing. Conversely, because
+the app ignores DRM 3D flags, an ordinary advertised 1080p30 timing can satisfy
+the 30-Hz candidate test without proving frame-packing capability. The
+SBS-only/no-30 path is therefore realistic rather than merely pathological.
+
+**Do not authorize the native UI transition based on 631!=0, the presence of a
+generic 1080p30 mode, or HDMI-1.4 compliance.** A future observational test
+would need to distinguish both timing presence and actual 3D transport support;
+the current application gate does not do that safely.
+
+### Camera mutations performed for this checkpoint
+
+**NONE.** No camera connection was made.

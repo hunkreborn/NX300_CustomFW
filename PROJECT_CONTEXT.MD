@@ -506,3 +506,14 @@ de serviço/produção.
 - Preferência 946 tem default forte 0/SBS e UI normal 0/1, mas nenhum clamp foi achado para valor inválido 2; nesse caso 631 pode permanecer stale.
 - Próximo teste seguro continua somente leitura: confirmar no XRandR/DRM que o sink realmente oferece a candidata 1080p30 frame-packing antes de qualquer evento nativo.
 - CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Errata HDMI 1.4: BSP Samsung 30 Hz e gate sem flags 3D
+
+- Errata: HDMI 1.4a oficial usa 1080p24 frame packing; o BSP NX300 diverge explicitamente para 1080p30. O Linux v3.5 upstream ainda não possuía essa tabela; v3.13 oficial contém 1080p24, 720p50/60 e top-bottom que o fork Samsung omite.
+- Fonte local `drm_edid.c` SHA-256 `f6a9bafd...9940`, linhas 1569–1580. O patcher só anota modos já existentes em `connector->probed_modes`; não cria 1080p30 ausente.
+- O retorno do parser VSDB é usado apenas como booleano: qualquer estrutura 3D reconhecida faz o BSP anotar todos os timings Samsung correspondentes presentes, sem respeitar precisamente o formato anunciado.
+- Build311 calcula refresh por `dotClock/(hTotal*vTotal)`, arredonda, dobra se interlace e aceita `1920x1080` ou `1920x1080f`; o ramo 30 Hz não testa bits DRM 3D.
+- D4DRM e Xorg preservam o word completo de flags até RandR, mas `__xrr_output_select` só testa `0x10=INTERLACE`. Logo os bits 14–16 estavam disponíveis e foram ignorados pelo app.
+- Correção adicional: `0x318574` não é comprovadamente uma segunda variante nominal; o mesmo primeiro modo 30 Hz popula `0x31856c` e `0x318574`.
+- A capture library prova escolhas 3D movie 15/30 fps, mas não foi encontrada conversão 24->30. Comando 66 usa payload nulo no caller Build311 e seu default exato continua desconhecido.
+- Segurança: não testar com base em 631!=0, 1080p30 genérico ou conformidade HDMI 1.4. CAMERA MUTATIONS: NONE.

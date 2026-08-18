@@ -1716,3 +1716,27 @@ elimina a dependência de enumerar syscalls presentes durante a anexação.
 - DWARF `MMCameraUserDataParam`: 43=`MM_CAMERA_USERDATA_IZOOM`; 66=`MM_CAMERA_USERDATA_3DMOVIEFRAMERATE`. Build311 consulta 43 em `0x150894` e seta 66 em `0x150978`.
 - Implicação de segurança: não autorizar teste baseado apenas em 631!=0. Primeiro provar, por inventário read-only, a presença da candidata 1080p30 frame-packing efetivamente usada.
 - CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Errata: tabela 3D Samsung e classificação real de `0x31856c`
+
+### Comparação exata
+
+- NX300 `drm_edid.c` SHA-256 `f6a9bafd49fa52a3da5c90e711e74a8351f1d3040274dabf1a8f92c299af9940`, linhas 1569–1580: 1080p30 FP e 1080i50/60 SBS.
+- Linux oficial v3.5: nenhuma tabela stereo mandatory. Linux oficial v3.13 SHA-256 `55b43f2b034c0ae848d03457bfbacad89efd187270804c95af3164850a7aa5b5`, linhas 2595–2606: 1080p24 FP/TAB, 1080i50/60 SBS e 720p50/60 FP/TAB.
+- PROVEN: Samsung mudou 24->30 e removeu outras entradas oficiais; não se deve atribuir 30 Hz ao padrão HDMI 1.4a.
+- O patcher Samsung percorre apenas modos já probed, logo anota mas não cria 1080p30. O bitmask do VSDB é reduzido a booleano no caller e não restringe quais formatos da tabela serão aplicados.
+
+### Build311 e transporte de flags
+
+- Refresh: loads `dotClock/hTotal/vTotal` em `0x157e24/0x157e58/0x157e8c`; divisão/arredondamento `0x157e98..0x157eac`; dobra quando `flags&0x10` em `0x157edc..0x157ef4`.
+- Nomes aceitos: `1920x1080` e `1920x1080f`, `0x157f20..0x157f84`. Refresh==30 grava mode ID em `0x31856c` em `0x1581e4` sem testar qualquer flag 3D.
+- O mesmo modo da primeira iteração 30 Hz também grava `0x318574` em `0x158238`; a interpretação anterior como segunda variante nominal fica corrigida.
+- D4DRM SHA `8a23226f...b4fa`: conversores `0x13554/0x13678` copiam integralmente flags DRM para `DisplayModeRec.Flags`. Xorg SHA `a2525423...6c31`: `0x89d00` copia flags para RR e chama `RRModeGet` em `0x89d64`.
+- `XRRModeInfo/RandR` usa flags 32-bit. Na rotina do app só há testes `&0x10`; bits 14/15/16 não são testados. Portanto o ABI não os descartou: o app escolheu ignorá-los.
+- `1920x1080f` não significa frame packing: o próprio BSP cria modos comuns forced/fake com esse nome em `drm_add_modes_dvi_required()`.
+
+### Cadência da câmera
+
+- `libcapture-fw-slpcam-nx300.so` SHA `48f4f636...07ac`: `convertUserData_3DMOVIEFRAMERATE` `0x1eca8c` e `Set3DFramerate` `0x1e4f2c`; strings enumeram FPS15/FPS30.
+- Não há evidência estática de conversão 24->30. O comando Build311 66 passa dados/length nulos; seleção/default exatos continuam UNKNOWN.
+- Consequência: sink HDMI 1.4 conforme pode não ter 1080p30, e 1080p30 comum pode satisfazer o app sem capacidade FP. Gate nativo continua bloqueado. CAMERA MUTATIONS: NONE.
