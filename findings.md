@@ -1680,3 +1680,11 @@ elimina a dependência de enumerar syscalls presentes durante a anexação.
 - `UI_Set_X_Crtc_Config` trata 631==1 especialmente porque seleciona um dos mode IDs SBS guardados (`0x318570/0x318578`); demais tipos usam `0x31856c`.
 - O uso de `CESDEMO=1` também no caminho oficial mostra que essa variável isolada não explica o crash de `hdmidemo.adj`. A diferença crítica é a transição completa/guardada da UI, sem stop/set-attributes/start manual do camcorder.
 - Relatório: `hdmi_liveview_codex_report.md`. CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Checkpoint PR #1: layout local do seletor XRandR
+
+- A correlação formal dos parâmetros mostrou offset de quatro bytes entre `DW_OP_fbreg` Build417 e operandos `[fp,#...]` Build311: `fbreg -932/-936/-940` coincide com `[fp-928/-932/-936]`.
+- Aplicando a mesma correção aos locais de `__xrr_output_select`: `[fp-28]=tv_possible_size_3d`, `[fp-32]=tv_possible_size_3d_sbs`, `[fp-36]=tv_possible_size_3d_sbs_pal`, `[fp-40]=tv_possible_size_3d_pal`; inicializações em `0x157ccc/0x157cd4/0x157cdc/0x157ce4`, sets em `0x1581b4/0x157fdc/0x1580e4/0x158208`, testes finais em `0x158d58/0x158d70/0x158d7c/0x158d64`.
+- `select_fakemode` corresponde a `[fp-24]`, não a `[fp-28]`; portanto o gate final de 631 é composto exclusivamente pelos quatro candidatos 3D.
+- Classificação revisada: XRandR + candidatos 3D PROVEN; origem em EDID STRONG INFERENCE; mapeamento exato de HDMI VSDB para mode name/flag UNKNOWN; participação de CEC no writer path NOT OBSERVED.
+- Nenhuma câmera acessada e nenhuma mutação realizada.

@@ -487,3 +487,11 @@ de serviço/produção.
 - Próximo teste mais seguro: somente o evento físico nativo em sink que realmente anuncie modos HDMI 3D, com saída/restauração pela própria UI. Nenhuma chamada/injeção manual deve preceder esse teste.
 - Relatório completo: `hdmi_liveview_codex_report.md`.
 - CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Checkpoint PR #1: auditoria do gate HDMI
+
+- Confirmado o mapeamento corrigido de frame-base dos quatro flags testados por `__xrr_output_select`: Build311 `[fp-28/-32/-36/-40]` corresponde respectivamente a `tv_possible_size_3d`, `tv_possible_size_3d_sbs`, `tv_possible_size_3d_sbs_pal` e `tv_possible_size_3d_pal`.
+- O `select_fakemode` fica em outro slot (`fp-24`) e não faz parte do teste final que decide 631=0.
+- A fronteira de evidência foi refinada: consumo de modos XRandR e semântica 3D são provados; origem EDID é inferência forte; ligação exata com VSDB/driver ainda requer rastrear o produtor dos mode names/flags; não há evidência no call path de que CEC escreva 631 ou determine 946.
+- Próximo passo permanece somente estático: rastrear `3d`/`1920x1080f`/flag XRandR `0x10` no X server e BSP HDMI e recuperar os nomes dos ioctls 43/66.
+- CAMERA MUTATIONS: NONE.

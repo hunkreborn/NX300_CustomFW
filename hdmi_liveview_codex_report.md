@@ -293,3 +293,31 @@ No camera connection was made during this analysis. No camera/SD/NAND process, m
 ## Reproducibility notes
 
 The analysis used `sha256sum`, `readelf`, `arm-linux-gnueabi-nm`, `arm-linux-gnueabi-objdump`, `strings`, `rg`, and small local text-processing scripts. Direct xrefs were accepted only when the ARM call target resolved to Build311 `UI_Get_Value`, `UI_Set_Value`, or `UI_Hdmi_3D_Liveview`. Build417 names were accepted only where instruction/control-flow fingerprints matched; all reported execution addresses were then re-derived from Build311.
+
+## 12. PR #1 checkpoint — local-variable and evidence ledger
+
+This section records the additional audit performed for the shared PR protocol. It does not change the recommended experiment.
+
+### Correlated local layout of `__xrr_output_select`
+
+The Build417 DWARF frame-base locations are displaced by four bytes from the Build311 `fp` operands (validated using the three formal parameters: DWARF `fbreg -932/-936/-940` corresponds to Build311 `[fp,#-928/-932/-936]`). With that correction, the four final capability tests map as follows:
+
+| Build311 stack slot | Correlated source local | Initialization | Set/use evidence |
+|---|---|---:|---|
+| `[fp,#-28]` | `tv_possible_size_3d` | `0x157ccc` | set at `0x1581b4`; tested `0x158d58` |
+| `[fp,#-32]` | `tv_possible_size_3d_sbs` | `0x157cd4` | set at `0x157fdc`; tested `0x158d70` |
+| `[fp,#-36]` | `tv_possible_size_3d_sbs_pal` | `0x157cdc` | set at `0x1580e4`; tested `0x158d7c` |
+| `[fp,#-40]` | `tv_possible_size_3d_pal` | `0x157ce4` | set at `0x158208`; tested `0x158d64` |
+
+This makes the final `631=0` condition directly reproducible from Build311 and removes an earlier ambiguity where the four slots could have been mistaken for generic connection flags. The nearby `select_fakemode` local is a different slot (`[fp,#-24]` after the same frame correction) and is not part of the final four-way test.
+
+### Evidence boundary: EDID and CEC
+
+- **PROVEN:** `__xrr_output_select` consumes XRandR output/mode records and the four final booleans are explicitly named 3D timing candidates in correlated DWARF.
+- **STRONG INFERENCE:** the X server/HDMI driver populated those records from sink EDID. This is the normal source of connector modes, but raw VSDB parsing is not present in the application routine itself.
+- **NOT PROVEN:** that raw EDID bytes, HDMI VSDB, or a specific DRM property directly map to any one local candidate without examining the X server/driver implementation.
+- **NO CALL-PATH EVIDENCE:** CEC participates in writes of 631 or reads of 946. This is intentionally narrower than claiming CEC is absent from the firmware.
+
+### Safest remaining static step
+
+Trace the producer of the XRandR mode names/flags (`3d`, `1920x1080f`, and the mode flag tested with bit `0x10`) through the NX300 X server and HDMI DRM/BSP sources. The goal is to identify the exact EDID/VSDB condition that creates the candidate consumed at `0x157c4c`, without altering a sink or camera. In parallel, recover symbolic names for camera ioctl IDs 43 and 66 from the matching capture-framework headers/debug types; neither unknown is a reason to invoke the live process.
