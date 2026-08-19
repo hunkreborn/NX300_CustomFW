@@ -487,3 +487,41 @@ de serviço/produção.
 - Próximo teste mais seguro: somente o evento físico nativo em sink que realmente anuncie modos HDMI 3D, com saída/restauração pela própria UI. Nenhuma chamada/injeção manual deve preceder esse teste.
 - Relatório completo: `hdmi_liveview_codex_report.md`.
 - CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Checkpoint PR #1: auditoria do gate HDMI
+
+- Confirmado o mapeamento corrigido de frame-base dos quatro flags testados por `__xrr_output_select`: Build311 `[fp-28/-32/-36/-40]` corresponde respectivamente a `tv_possible_size_3d`, `tv_possible_size_3d_sbs`, `tv_possible_size_3d_sbs_pal` e `tv_possible_size_3d_pal`.
+- O `select_fakemode` fica em outro slot (`fp-24`) e não faz parte do teste final que decide 631=0.
+- A fronteira de evidência foi refinada: consumo de modos XRandR e semântica 3D são provados; origem EDID é inferência forte; ligação exata com VSDB/driver ainda requer rastrear o produtor dos mode names/flags; não há evidência no call path de que CEC escreva 631 ou determine 946.
+- Próximo passo permanece somente estático: rastrear `3d`/`1920x1080f`/flag XRandR `0x10` no X server e BSP HDMI e recuperar os nomes dos ioctls 43/66.
+- CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Checkpoint PR #1: origem VSDB, modos e restrição de segurança
+
+- O BSP `drm_edid.c` confirma a cadeia HDMI VSDB 3D -> anotação dos modos DRM obrigatórios: 1080p30 frame packing e 1080i50/60 SBS-half. O bit `0x10` testado pelo app é `INTERLACE`, não uma flag 3D.
+- Globais Build311: `0x31856c` recebe o mode ID 1080p30 em `0x1581e4`; `0x318570` recebe 1080i60 SBS em `0x15800c`; `0x318578` recebe 1080i50 SBS em `0x158114`; `0x318574` recebe a segunda variante 30p em `0x158238`.
+- `UI_Set_HDMI_3D_Type(int)` (`0x1ede68`) mapeia explicitamente entrada pública 3 para estado interno 4. A entrada oficial carrega 3 em `0x1509a8`, portanto escolhe deliberadamente frame packing.
+- O caminho liveview ignora a variante exata de 631: sempre usa `0x31856c` e frame packing. Um candidato somente SBS pode tornar 631 não zero enquanto `0x31856c` contém fallback comum; logo `631!=0` isoladamente não é precondição segura.
+- Ioctls recuperados por DWARF: 43=`MM_CAMERA_USERDATA_IZOOM`; 66=`MM_CAMERA_USERDATA_3DMOVIEFRAMERATE`.
+- Preferência 946 tem default forte 0/SBS e UI normal 0/1, mas nenhum clamp foi achado para valor inválido 2; nesse caso 631 pode permanecer stale.
+- Próximo teste seguro continua somente leitura: confirmar no XRandR/DRM que o sink realmente oferece a candidata 1080p30 frame-packing antes de qualquer evento nativo.
+- CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Errata HDMI 1.4: BSP Samsung 30 Hz e gate sem flags 3D
+
+- Errata: HDMI 1.4a oficial usa 1080p24 frame packing; o BSP NX300 diverge explicitamente para 1080p30. O Linux v3.5 upstream ainda não possuía essa tabela; v3.13 oficial contém 1080p24, 720p50/60 e top-bottom que o fork Samsung omite.
+- Fonte local `drm_edid.c` SHA-256 `f6a9bafd...9940`, linhas 1569–1580. O patcher só anota modos já existentes em `connector->probed_modes`; não cria 1080p30 ausente.
+- O retorno do parser VSDB é usado apenas como booleano: qualquer estrutura 3D reconhecida faz o BSP anotar todos os timings Samsung correspondentes presentes, sem respeitar precisamente o formato anunciado.
+- Build311 calcula refresh por `dotClock/(hTotal*vTotal)`, arredonda, dobra se interlace e aceita `1920x1080` ou `1920x1080f`; o ramo 30 Hz não testa bits DRM 3D.
+- D4DRM e Xorg preservam o word completo de flags até RandR, mas `__xrr_output_select` só testa `0x10=INTERLACE`. Logo os bits 14–16 estavam disponíveis e foram ignorados pelo app.
+- Correção adicional: `0x318574` não é comprovadamente uma segunda variante nominal; o mesmo primeiro modo 30 Hz popula `0x31856c` e `0x318574`.
+- A capture library prova escolhas 3D movie 15/30 fps, mas não foi encontrada conversão 24->30. Comando 66 usa payload nulo no caller Build311 e seu default exato continua desconhecido.
+- Segurança: não testar com base em 631!=0, 1080p30 genérico ou conformidade HDMI 1.4. CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Gate read-only para ensaio HDMI nativo
+
+- Resolvido o comando 66: em `libcapture-fw-slpcam-nx300.so`, ele é convertido em `0x01070004` e despachado como `CCapCmdIf::ChangeMode(1)`, não como `Set3DFramerate`; não valida sink nem escolhe cadência 15/30.
+- Gate proposto exige três camadas simultâneas: EDID bruto com VIC34 explicitamente associado a FRAME_PACKING; modo DRM progressivo 1080p30 com flag `0x10000`; e confirmação de que o primeiro candidato RandR que Build311 escolheria em `0x31856c` é exatamente esse modo marcado.
+- `631!=0`, 1080p30 genérico, sufixo `f`, HDMI 1.4/3D-present ou flag DRM isolada são apenas sugestivos.
+- Passar o gate somente autoriza um futuro teste nativo cuidadosamente observado; não prova estabilidade nem clean HDMI.
+- CAMERA MUTATIONS: NONE.

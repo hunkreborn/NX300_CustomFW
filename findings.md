@@ -1680,3 +1680,80 @@ elimina a dependência de enumerar syscalls presentes durante a anexação.
 - `UI_Set_X_Crtc_Config` trata 631==1 especialmente porque seleciona um dos mode IDs SBS guardados (`0x318570/0x318578`); demais tipos usam `0x31856c`.
 - O uso de `CESDEMO=1` também no caminho oficial mostra que essa variável isolada não explica o crash de `hdmidemo.adj`. A diferença crítica é a transição completa/guardada da UI, sem stop/set-attributes/start manual do camcorder.
 - Relatório: `hdmi_liveview_codex_report.md`. CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Checkpoint PR #1: layout local do seletor XRandR
+
+- A correlação formal dos parâmetros mostrou offset de quatro bytes entre `DW_OP_fbreg` Build417 e operandos `[fp,#...]` Build311: `fbreg -932/-936/-940` coincide com `[fp-928/-932/-936]`.
+- Aplicando a mesma correção aos locais de `__xrr_output_select`: `[fp-28]=tv_possible_size_3d`, `[fp-32]=tv_possible_size_3d_sbs`, `[fp-36]=tv_possible_size_3d_sbs_pal`, `[fp-40]=tv_possible_size_3d_pal`; inicializações em `0x157ccc/0x157cd4/0x157cdc/0x157ce4`, sets em `0x1581b4/0x157fdc/0x1580e4/0x158208`, testes finais em `0x158d58/0x158d70/0x158d7c/0x158d64`.
+- `select_fakemode` corresponde a `[fp-24]`, não a `[fp-28]`; portanto o gate final de 631 é composto exclusivamente pelos quatro candidatos 3D.
+- Classificação revisada: XRandR + candidatos 3D PROVEN; origem em EDID STRONG INFERENCE; mapeamento exato de HDMI VSDB para mode name/flag UNKNOWN; participação de CEC no writer path NOT OBSERVED.
+- Nenhuma câmera acessada e nenhuma mutação realizada.
+
+## 2026-08-18 — HDMI VSDB -> XRandR e audit do transporte frame-packing
+
+### Producer no kernel/BSP
+
+- `TIZEN/project/NX300/packages/linux-3.5/drivers/gpu/drm/drm_edid.c`: `cea_hdmi_3d_present()` interpreta o HDMI VSDB e reconhece frame packing, top/bottom e SBS-half; `cea_hdmi_patch_mandatory_3d_modes()` anota 1080p30 como frame packing e 1080i50/60 como SBS-half.
+- `include/drm/drm_mode.h`: `0x10` é `DRM_MODE_FLAG_INTERLACE`; as flags 3D ocupam bits 14–16. Corrige a hipótese de que o teste `flags & 0x10` do app fosse diretamente uma flag 3D.
+- Cadeia de evidência: VSDB -> parser DRM -> modos obrigatórios anotados -> XRandR -> `__xrr_output_select` -> globals/item631. A conversão exata do X server para nomes `1920x1080[f]` ainda é inferência forte.
+
+### Ledger dos globals Build311
+
+- `0x31856c`: zerado `0x157750`; recebe candidata 1080p30 progressiva em `0x1581e4`; se não houver candidata 30p, recebe modo normal fallback em `0x158c00`; lido pelo CRTC liveview em `0x151f78`.
+- `0x318570`: recebe 1080i60 SBS em `0x15800c`; usado pelo ramo 631==1 em `0x1523e0/0x15242c`.
+- `0x318578`: recebe 1080i50 SBS em `0x158114`; usado no ramo 631==1 em `0x15243c`.
+- `0x318574`: recebe segunda variante 30p em `0x158238`; consumidor direto não localizado.
+
+### Tipo 3D e mismatch SBS/frame packing
+
+- `UI_Set_HDMI_3D_Type(int)` Build311 `0x1ede68` implementa switch: 0->estado1, 1->estado2, 2->estado3, 3->estado4, default->estado1. A chamada oficial `0x1509a8/0x1509ac` usa literal 3, provando seleção deliberada de frame packing.
+- `UI_Hdmi_3D_Liveview(0)` não usa o valor exato de 631: escolhe sempre `0x31856c` e tipo público 3. O ramo SBS de 631 só é respeitado no CRTC normal/playback.
+- Caso-limite PROVEN no controle de fluxo: somente candidatos SBS podem produzir 631!=0 sem candidata 30p; nesse caso `0x31856c` pode ser modo normal fallback enquanto o estado interno é frame packing. Se EDID HDMI 1.4 conforme sempre evita isso é ainda UNKNOWN.
+
+### Preferência e ioctls
+
+- Item946: enum 0=SBS, 1=FRAME_PACKING, 2=MAX. Campo persistido `e_3d_hdmi_output` offset `0x47c`; default em `libprefman.so` é zero. Menu normal aparenta expor apenas 0/1. Nenhum clamp para 2 foi localizado; com candidatas, 631 pode ficar stale.
+- DWARF `MMCameraUserDataParam`: 43=`MM_CAMERA_USERDATA_IZOOM`; 66=`MM_CAMERA_USERDATA_3DMOVIEFRAMERATE`. Build311 consulta 43 em `0x150894` e seta 66 em `0x150978`.
+- Implicação de segurança: não autorizar teste baseado apenas em 631!=0. Primeiro provar, por inventário read-only, a presença da candidata 1080p30 frame-packing efetivamente usada.
+- CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Errata: tabela 3D Samsung e classificação real de `0x31856c`
+
+### Comparação exata
+
+- NX300 `drm_edid.c` SHA-256 `f6a9bafd49fa52a3da5c90e711e74a8351f1d3040274dabf1a8f92c299af9940`, linhas 1569–1580: 1080p30 FP e 1080i50/60 SBS.
+- Linux oficial v3.5: nenhuma tabela stereo mandatory. Linux oficial v3.13 SHA-256 `55b43f2b034c0ae848d03457bfbacad89efd187270804c95af3164850a7aa5b5`, linhas 2595–2606: 1080p24 FP/TAB, 1080i50/60 SBS e 720p50/60 FP/TAB.
+- PROVEN: Samsung mudou 24->30 e removeu outras entradas oficiais; não se deve atribuir 30 Hz ao padrão HDMI 1.4a.
+- O patcher Samsung percorre apenas modos já probed, logo anota mas não cria 1080p30. O bitmask do VSDB é reduzido a booleano no caller e não restringe quais formatos da tabela serão aplicados.
+
+### Build311 e transporte de flags
+
+- Refresh: loads `dotClock/hTotal/vTotal` em `0x157e24/0x157e58/0x157e8c`; divisão/arredondamento `0x157e98..0x157eac`; dobra quando `flags&0x10` em `0x157edc..0x157ef4`.
+- Nomes aceitos: `1920x1080` e `1920x1080f`, `0x157f20..0x157f84`. Refresh==30 grava mode ID em `0x31856c` em `0x1581e4` sem testar qualquer flag 3D.
+- O mesmo modo da primeira iteração 30 Hz também grava `0x318574` em `0x158238`; a interpretação anterior como segunda variante nominal fica corrigida.
+- D4DRM SHA `8a23226f...b4fa`: conversores `0x13554/0x13678` copiam integralmente flags DRM para `DisplayModeRec.Flags`. Xorg SHA `a2525423...6c31`: `0x89d00` copia flags para RR e chama `RRModeGet` em `0x89d64`.
+- `XRRModeInfo/RandR` usa flags 32-bit. Na rotina do app só há testes `&0x10`; bits 14/15/16 não são testados. Portanto o ABI não os descartou: o app escolheu ignorá-los.
+- `1920x1080f` não significa frame packing: o próprio BSP cria modos comuns forced/fake com esse nome em `drm_add_modes_dvi_required()`.
+
+### Cadência da câmera
+
+- `libcapture-fw-slpcam-nx300.so` SHA `48f4f636...07ac`: `convertUserData_3DMOVIEFRAMERATE` `0x1eca8c` e `Set3DFramerate` `0x1e4f2c`; strings enumeram FPS15/FPS30.
+- Não há evidência estática de conversão 24->30. O comando Build311 66 passa dados/length nulos; seleção/default exatos continuam UNKNOWN.
+- Consequência: sink HDMI 1.4 conforme pode não ter 1080p30, e 1080p30 comum pode satisfazer o app sem capacidade FP. Gate nativo continua bloqueado. CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Dispatch do comando 66 e precondição HDMI observacional
+
+### Comando 66 (PROVEN)
+
+- `libcapture-fw-slpcam-nx300.so` SHA `48f4f636...07ac`: mapper `0x1f51f8`, entrada 66 em `0x1f586c`, comando interno `0x01070004`.
+- Dispatcher `0x1f3b3c..0x1f3ba4`: comando 66 cria inteiro local 1 e chama `OperateCapture(0x01070004,&value,0)`; comando 61 usa valor 0.
+- `OperateCapture` `0x1e6ca4` resolve esse comando como `CCapCmdIf::ChangeMode`; `ChangeMode` `0x1e3218` seleciona frontend virtual `+4` para 0 ou `+8` para 1.
+- Errata: o payload nulo não deixa default de cadência desconhecido. Comando 66 significa `ChangeMode(1)` e é separado de `Set3DFramerate`.
+
+### Gate de três camadas (STRONG EVIDENCE)
+
+- EDID: checksum válido, CTA/HDMI VSDB, VIC34 presente e associação explícita de estrutura FRAME_PACKING à posição SVD de VIC34.
+- DRM: modo progressivo 1920x1080@30 com `DRM_MODE_FLAG_3D_FRAME_PACKING=0x10000`.
+- RandR/Build311: preservar ordem, flags e timings; o primeiro candidato aceito por nome/refresh e gravado em `0x31856c` deve ser o modo progressivo marcado. Duplicata comum anterior reprova o gate.
+- As três juntas são suficientes apenas para admitir ensaio físico controlado. Cada uma isolada, 631, `1920x1080f` e HDMI 1.4 são insuficientes.
+- CAMERA MUTATIONS: NONE.
