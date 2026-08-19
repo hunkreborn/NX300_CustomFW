@@ -1740,3 +1740,20 @@ elimina a dependência de enumerar syscalls presentes durante a anexação.
 - `libcapture-fw-slpcam-nx300.so` SHA `48f4f636...07ac`: `convertUserData_3DMOVIEFRAMERATE` `0x1eca8c` e `Set3DFramerate` `0x1e4f2c`; strings enumeram FPS15/FPS30.
 - Não há evidência estática de conversão 24->30. O comando Build311 66 passa dados/length nulos; seleção/default exatos continuam UNKNOWN.
 - Consequência: sink HDMI 1.4 conforme pode não ter 1080p30, e 1080p30 comum pode satisfazer o app sem capacidade FP. Gate nativo continua bloqueado. CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Dispatch do comando 66 e precondição HDMI observacional
+
+### Comando 66 (PROVEN)
+
+- `libcapture-fw-slpcam-nx300.so` SHA `48f4f636...07ac`: mapper `0x1f51f8`, entrada 66 em `0x1f586c`, comando interno `0x01070004`.
+- Dispatcher `0x1f3b3c..0x1f3ba4`: comando 66 cria inteiro local 1 e chama `OperateCapture(0x01070004,&value,0)`; comando 61 usa valor 0.
+- `OperateCapture` `0x1e6ca4` resolve esse comando como `CCapCmdIf::ChangeMode`; `ChangeMode` `0x1e3218` seleciona frontend virtual `+4` para 0 ou `+8` para 1.
+- Errata: o payload nulo não deixa default de cadência desconhecido. Comando 66 significa `ChangeMode(1)` e é separado de `Set3DFramerate`.
+
+### Gate de três camadas (STRONG EVIDENCE)
+
+- EDID: checksum válido, CTA/HDMI VSDB, VIC34 presente e associação explícita de estrutura FRAME_PACKING à posição SVD de VIC34.
+- DRM: modo progressivo 1920x1080@30 com `DRM_MODE_FLAG_3D_FRAME_PACKING=0x10000`.
+- RandR/Build311: preservar ordem, flags e timings; o primeiro candidato aceito por nome/refresh e gravado em `0x31856c` deve ser o modo progressivo marcado. Duplicata comum anterior reprova o gate.
+- As três juntas são suficientes apenas para admitir ensaio físico controlado. Cada uma isolada, 631, `1920x1080f` e HDMI 1.4 são insuficientes.
+- CAMERA MUTATIONS: NONE.

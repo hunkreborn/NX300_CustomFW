@@ -612,3 +612,118 @@ the current application gate does not do that safely.
 ### Camera mutations performed for this checkpoint
 
 **NONE.** No camera connection was made.
+
+## 15. Read-only admission gate for a native HDMI-liveview trial
+
+This section answers the 2026-08-18 PR review request. It deliberately does
+not re-open the already settled 631/946 mapping. Its purpose is narrower: define
+what must be observed before a physical-key trial can be considered reasonably
+safe. Passing this gate establishes *eligibility for a carefully observed
+trial*, not proof that the transition or clean output will be stable.
+
+### Command 66 is not a cadence or sink check
+
+The previously unresolved null-payload behavior is now statically resolved in
+`libcapture-fw-slpcam-nx300.so` (SHA-256
+`48f4f6362598211679c252ad01154d57264b6e01269f1a0861a7852e2fe107ac`):
+
+- the public-command mapper at `0x1f51f8` maps command 66 to internal command
+  `0x01070004` (`0x1f586c`);
+- its special dispatch at `0x1f3b3c..0x1f3ba4` does not dereference the null
+  caller payload. Command 66 creates a local integer equal to 1 and calls
+  `OperateCapture(0x01070004, &value, 0)`; the neighboring command 61 path uses
+  local value 0;
+- `OperateCapture()` at `0x1e6ca4` maps `0x01070004` to
+  `CCapCmdIf::ChangeMode`, not `CCapCmdIf::Set3DFramerate`;
+- `CCapCmdIf::ChangeMode()` at `0x1e3218` selects one of two capture-frontend
+  virtual methods: value 0 uses vtable offset `+4`, value 1 uses `+8`.
+
+Thus Build311's null command-66 call means `ChangeMode(1)`. It neither chooses
+15/30 fps nor validates the sink. The separately observed
+`Set3DFramerate()` path is not evidence for a 24-to-30 conversion here.
+
+### Required three-layer AND gate
+
+All three layers below must pass. A failure or unavailable observation at any
+layer leaves the native trial blocked.
+
+#### 1. Raw EDID/VSDB evidence
+
+The exact connected-sink EDID must have valid block checksums and a CTA
+extension containing:
+
+1. an HDMI VSDB with OUI `00-0c-03` (wire order `03 0c 00`);
+2. HDMI-video-present and 3D-present asserted;
+3. a Video Data Block whose SVD list explicitly contains VIC 34
+   (`1920x1080p30`); and
+4. an explicit FRAME_PACKING association with the SVD position containing
+   VIC 34: either Structure_ALL bit 0 with its mask covering that SVD, or an
+   individual HDMI 3D entry for that VIC order with structure code 0.
+
+This fourth requirement is intentionally stronger than the Samsung BSP. The
+upstream v3.13 parser shows the actual VSDB semantics in
+`add_3d_struct_modes()` (`2674..2715`) and `do_hdmi_vsdb_modes()`
+(`2728..2807`): structure 0 is frame packing, structure 6 top/bottom and
+structure 8 side-by-side half; associations are made by SVD position. The
+NX300 header `imagedev/usr/include/drime4/udd/edid_type.h` lines 127–154 agrees
+on these encodings. In contrast, the Samsung BSP reduces recognition to a
+boolean and can over-annotate every matching timing in its local mandatory
+table. Therefore its resulting DRM flag alone is not independent proof of the
+sink's precise advertisement.
+
+#### 2. Effective DRM connector evidence
+
+The active connector must expose an exact progressive 1920x1080 mode whose
+calculated refresh is 30 Hz and whose flags include
+`DRM_MODE_FLAG_3D_FRAME_PACKING` (`1 << 16`), with INTERLACE clear. Reading the
+text `modes` sysfs node is insufficient because it omits the full mode flags;
+a read-only DRM/KMS inventory must retain timing and flags for each mode.
+
+This layer confirms what the Samsung parser/driver actually published, while
+layer 1 guards against its lossy VSDB-to-table conversion.
+
+#### 3. Effective XRandR/application-selection evidence
+
+A read-only RandR inventory must preserve server order and, for every candidate,
+record mode ID, exact name, dot clock, totals and complete flags. It must then
+emulate Build311's selection at `0x157e24..0x158238`:
+
+- accept only `1920x1080` or `1920x1080f`;
+- calculate refresh as the application does;
+- reject interlaced candidates for this gate even though the application can
+  double their field rate;
+- require frame-packing bit `1 << 16` on the candidate that the application
+  will select first into `0x31856c`.
+
+Duplicate 1080/30 modes are important: if an ordinary unflagged candidate
+precedes a flagged one and Build311 therefore stores the former, the gate
+fails. A conservative equivalent is to require every name/refresh candidate
+that Build311 could select to be progressive and explicitly frame-packed.
+
+### Evidence classification
+
+| Observation | Classification | Reason |
+|---|---|---|
+| Valid VSDB + VIC34 + explicit FP association to VIC34 | **Required / sufficient at EDID layer** | Proves the sink advertises this nonstandard Samsung target explicitly |
+| Progressive DRM 1080p30 with flag `0x10000` | **Required, not sufficient alone** | Confirms effective kernel mode, but Samsung's lossy patcher can over-annotate |
+| First Build311-matching RandR candidate is that flagged progressive mode | **Required, not sufficient alone** | Confirms the actual application choice rather than mere mode presence |
+| All three required layers pass | **Sufficient only to admit a controlled native trial** | Still does not prove transition stability or clean OSD behavior |
+| `631 != 0` | **Suggestive only** | State machine can be enabled by candidates that do not prove the selected FP transport |
+| Generic 1920x1080@30 or name `1920x1080f` | **Suggestive only** | Build311 ignores the 3D bits; `f` is also used by ordinary forced modes |
+| HDMI 1.4/3D-present without per-VIC association | **Suggestive only** | Mandatory standard support can be 1080p24, not Samsung 1080p30 FP |
+| DRM FP flag without raw association | **Suggestive only** | The local BSP may annotate from a boolean 3D result |
+| Command 66 / `ChangeMode(1)` | **Not a precondition** | It changes capture-frontend mode and supplies no sink/cadence evidence |
+
+### Safest next observation
+
+Collect, without mutation, (a) the connector's raw EDID bytes, (b) the complete
+DRM mode list including flags and timings, and (c) the ordered RandR mode
+records. Parse the EDID locally and run a small local emulator of Build311's
+selection. If the wrapper does not permit an exact read-only collection
+command, stop and request that command explicitly; do not substitute another
+access path. No HDMI event should be generated until the three-layer gate can
+be evaluated.
+
+### Camera mutations performed for this checkpoint
+
+**NONE.** No camera connection was made.

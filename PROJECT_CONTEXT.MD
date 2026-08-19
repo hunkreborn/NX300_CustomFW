@@ -517,3 +517,11 @@ de serviço/produção.
 - Correção adicional: `0x318574` não é comprovadamente uma segunda variante nominal; o mesmo primeiro modo 30 Hz popula `0x31856c` e `0x318574`.
 - A capture library prova escolhas 3D movie 15/30 fps, mas não foi encontrada conversão 24->30. Comando 66 usa payload nulo no caller Build311 e seu default exato continua desconhecido.
 - Segurança: não testar com base em 631!=0, 1080p30 genérico ou conformidade HDMI 1.4. CAMERA MUTATIONS: NONE.
+
+## 2026-08-18 — Gate read-only para ensaio HDMI nativo
+
+- Resolvido o comando 66: em `libcapture-fw-slpcam-nx300.so`, ele é convertido em `0x01070004` e despachado como `CCapCmdIf::ChangeMode(1)`, não como `Set3DFramerate`; não valida sink nem escolhe cadência 15/30.
+- Gate proposto exige três camadas simultâneas: EDID bruto com VIC34 explicitamente associado a FRAME_PACKING; modo DRM progressivo 1080p30 com flag `0x10000`; e confirmação de que o primeiro candidato RandR que Build311 escolheria em `0x31856c` é exatamente esse modo marcado.
+- `631!=0`, 1080p30 genérico, sufixo `f`, HDMI 1.4/3D-present ou flag DRM isolada são apenas sugestivos.
+- Passar o gate somente autoriza um futuro teste nativo cuidadosamente observado; não prova estabilidade nem clean HDMI.
+- CAMERA MUTATIONS: NONE.
